@@ -1,9 +1,11 @@
 % !TEX root = ../../ctfp-print.tex
 
-\lettrine[lhang=0.17]{타}{입과 순수 함수를 카테고리로} 모델링하는 방법을 살펴 보았습니다.
-또한 카테고리 이론에서 부작용이나 순수하지 않은 함수를 모델링하는 방법이 있다고 언급했습니다.
-실행을 기록하거나 추적하는 함수와 같은 하나의 예를 살펴 보겠습니다. 명령형 언어에서는 다음과
-같이 전역 상태를 변경하여 구현할 수 있습니다:
+\lettrine[lhang=0.17]{Y}{ou've seen how to model} types and pure functions as a category. I also
+mentioned that there is a way to model side effects, or non-pure
+functions, in category theory. Let's have a look at one such example:
+functions that log or trace their execution. Something that, in an
+imperative language, would likely be implemented by mutating some global
+state, as in:
 
 \begin{snip}{cpp}
 string logger;
@@ -13,44 +15,52 @@ bool negate(bool b) {
     return !b;
 }
 \end{snip}
-이를 메모하여 사용하면 로그를 생성하지 못하기 때문에 순수한 함수가 아니라는걸 알 수 있습니다.
-이 함수는 \newterm{부작용}이 있습니다.
+You know that this is not a pure function, because its memoized version
+would fail to produce a log. This function has \newterm{side effects}.
 
-최근의 프로그래밍에서는 복잡한 동시성을 다루기에 가능한 한 전역 상태를 변경하는 것을 기피합니다.
-아무도 이런 코드를 라이브러리에 결코 넣고 싶지 않겠죠.
+In modern programming, we try to stay away from global mutable state as
+much as possible --- if only because of the complications of
+concurrency. And you would never put code like this in a library.
 
-다행히 우리는 이 함수를 순수하게 만들 수 있습니다. 로그를 명시 적으로 안팎으로 전달하면 됩니다.
-문자열 인수를 추가하고 원래의 결과를 업데이트 된 로그를 포함한 문자열과 함께 출력하는걸 수행
-하십시오:
+Fortunately for us, it's possible to make this function pure. You just
+have to pass the log explicitly, in and out. Let's do that by adding a
+string argument, and pairing regular output with a string that contains
+the updated log:
 
 \begin{snip}{cpp}
 pair<bool, string> negate(bool b, string logger) {
     return make_pair(!b, logger + "Not so! ");
 }
 \end{snip}
-이 함수는 순수하고 부작용이 없으며 동일한 인수의 호출에 동일한 결과를 반환하며 필요하다면 메모
-할 수 있습니다. 그러나 로그를 누적하기 때문에 앞서 호출된 모든 가능한 기록을 메모해야 합니다.
-다음과 같은 별도의 메모 항목이 있습니다:
+This function is pure, it has no side effects, it returns the same pair
+every time it's called with the same arguments, and it can be memoized
+if necessary. However, considering the cumulative nature of the log,
+you'd have to memoize all possible histories that can lead to a given
+call. There would be a separate memo entry for:
 
 \begin{snip}{cpp}
 negate(true, "It was the best of times. ");
 \end{snip}
-그리고
+and
 
 \begin{snip}{cpp}
 negate(true, "It was the worst of times. ");
 \end{snip}
-이런 식이죠.
+and so on.
 
-또한 라이브러리로 쓰이기엔 훌륭한 인터페이스가 아닙니다. 호출하는 쪽에서 원하면 반환된 문자열을
-무시할 수 있으므로 큰 부담이 되지 않습니다. 그러나 문자열을 입력으로 전달해야 하므로 불편할 수
-있습니다.
+It's also not a very good interface for a library function. The callers
+are free to ignore the string in the return type, so that's not a huge
+burden; but they are forced to pass a string as input, which might be
+inconvenient.
 
-이와같은 일을 좀 더 수월하게 해결 할 수 없을까요? 관심사를 분리해 보는 건 어떨까요? 이 간단한
-예제에서 함수 negate 의 주요 목적은 주어진 불리언 값을 다른 불리언 값으로 바꾸는 것입니다.
-로깅은 보조입니다. 물론, 기록되는 메시지는 함수와 관련이 있지만 메시지를 하나의 연속 로그로
-집계하는 작업은 별도의 문제입니다. 여전히 함수가 문자열을 생성하기를 원하지만 로그를 생성하지
-않도록 합시다. 타협의 방법은 다음과 같습니다:
+Is there a way to do the same thing less intrusively? Is there a way to
+separate concerns? In this simple example, the main purpose of the
+function \code{negate} is to turn one Boolean into another. The
+logging is secondary. Granted, the message that is logged is specific to
+the function, but the task of aggregating the messages into one
+continuous log is a separate concern. We still want the function to
+produce a string, but we'd like to unburden it from producing a log. So
+here's the compromise solution:
 
 \begin{snip}{cpp}
 pair<bool, string> negate(bool b) {
