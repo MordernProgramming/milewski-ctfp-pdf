@@ -92,7 +92,7 @@ vector<string> words(string s) {
     return result;
 }
 \end{snip}
-이제 위에 문자열을 \code{toUpper} 함수와 \code{toWords} 함수로 변경한 결과를
+이제 문자열을 위의 \code{toUpper} 함수와 \code{toWords} 함수로 변경한 결과를
 반환값으로 전송하려 합니다.
 
 \begin{figure}[H]
@@ -100,6 +100,8 @@ vector<string> words(string s) {
 \includegraphics[width=0.3\textwidth]{images/piggyback.jpg}
 \end{figure}
 \noindent
+이 함수들의 반환 값을 "꾸밀" 수 있습니다. 일반적으로 임의의 값 \code{A}와 문자열의 쌍으로
+캡슐화하는 템플릿 \code{Writer}를 정의하는 방식으로 수행합니다:
 We will ``embellish'' the return values of these functions. Let's do it
 in a generic way by defining a template \code{Writer} that
 encapsulates a pair whose first component is a value of arbitrary type
@@ -109,7 +111,7 @@ encapsulates a pair whose first component is a value of arbitrary type
 template<class A>
 using Writer = pair<A, string>;
 \end{snip}
-Here are the embellished functions:
+여기 꾸며진 함수들이 있습니다:
 
 \begin{snip}{cpp}
 Writer<string> toUpper(string s) {
@@ -123,9 +125,8 @@ Writer<vector<string>> toWords(string s) {
     return make_pair(words(s), "toWords ");
 }
 \end{snip}
-We want to compose these two functions into another embellished function
-that uppercases a string and splits it into words, all the while
-producing a log of those actions. Here's how we may do it:
+이 두 함수를 결합하여 문자열을 대문자로 만들고 단어로 분할하는 다른 꾸며진 함수를 만들어 봅시다.
+그 방법은 다음과 같습니다:
 
 \begin{snip}{cpp}
 Writer<vector<string>> process(string s) {
