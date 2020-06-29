@@ -57,12 +57,10 @@ pair<bool, string> negate(bool b) {
     return make_pair(!b, "Not so! ");
 }
 \end{snip}
-The idea is that the log will be aggregated \emph{between} function
-calls.
+아이디어는 함수 호출 \emph{사이에} 로그가 집계된다는 것입니다.
 
-To see how this can be done, let's switch to a slightly more realistic
-example. We have one function from string to string that turns lower
-case characters to upper case:
+이 작업을 수행하는 방법을 알아보기 위해 좀 더 현실적인 예를 들어보겠습니다. 문자열에서 소문자를
+대문자로 바꾸는 함수가 하나 있습니다:
 
 \begin{snip}{cpp}
 string toUpper(string s) {
@@ -72,15 +70,14 @@ string toUpper(string s) {
     return result;
 }
 \end{snip}
-and another that splits a string into a vector of strings, breaking it
-on whitespace boundaries:
+그리고 문자열을 공백을 기준으로 나눠 문자열 벡터로 만드는 함수도 있습니다:
 
 \begin{snip}{cpp}
 vector<string> toWords(string s) {
     return words(s);
 }
 \end{snip}
-The actual work is done in the auxiliary function \code{words}:
+실제 작업은 words 라는 보조 함수에서 수행합니다.
 
 \begin{snip}{cpp}
 vector<string> words(string s) {
@@ -95,9 +92,8 @@ vector<string> words(string s) {
     return result;
 }
 \end{snip}
-We want to modify the functions \code{toUpper} and \code{toWords} so
-that they piggyback a message string on top of their regular return
-values.
+이제 위에 문자열을 \code{toUpper} 함수와 \code{toWords} 함수로 변경한 결과를
+반환값으로 전송하려 합니다.
 
 \begin{figure}[H]
 \centering
