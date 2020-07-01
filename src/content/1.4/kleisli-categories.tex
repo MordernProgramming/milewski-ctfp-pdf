@@ -155,19 +155,16 @@ pair<bool, string> isEven(int n) {
     return make_pair(n % 2 == 0, "isEven ");
 }
 \end{snip}
-By the laws of a category, we should be able to compose this morphism
-with another morphism that goes from the object \code{bool} to
-whatever. In particular, we should be able to compose it with our
-earlier \code{negate}:
+카테고리 규칙에 따라 객체 \code{bool}에서 어떤 형태로의 사상과도 합성 할 수 있습니다.
+마찬가지로 앞서 다룬 \code{negate} 함수와도 합성할 수 있지요:
 
 \begin{snip}{cpp}
 pair<bool, string> negate(bool b) {
     return make_pair(!b, "Not so! ");
 }
 \end{snip}
-Obviously, we cannot compose these two morphisms the same way we compose
-regular functions, because of the input/output mismatch. Their
-composition should look more like this:
+당장 연결할 두 사상을 합성하려면 연결에 필요한 입출력이 맞지 않아 일반적으로 함수를 합성하는
+방식으로는 합성할 수 없습니다. 이 경우는 다음과 같이 합성합니다:
 
 \begin{snip}{cpp}
 pair<bool, string> isOdd(int n) {
@@ -176,29 +173,23 @@ pair<bool, string> isOdd(int n) {
     return make_pair(p2.first, p1.second + p2.second);
 }
 \end{snip}
-So here's the recipe for the composition of two morphisms in this new
-category we are constructing:
+다음은 새로운 카테고리를 활용하여 두 가지 사상을 합성하는 레시피입니다:
 
 \begin{enumerate}
 \tightlist
 \item
-  Execute the embellished function corresponding to the first morphism
+  일단 꾸며진 함수 중 첫 번째 사상에 해당하는 함수를 실행
 \item
-  Extract the first component of the result pair and pass it to the
-  embellished function corresponding to the second morphism
+  그 결과인 쌍에서 첫 번째 요소를 꾸며진 함수 중 두 번째 사상에 해당하는 함수에 전달
 \item
-  Concatenate the second component (the string) of the first result
-  and the second component (the string) of the second result
+  각 두 결과의 두 번째 요소(문자열)들을 연결
 \item
-  Return a new pair combining the first component of the final result
-  with the concatenated string.
+  최종 결과와 연결된 문자열의 쌍으로 반환
 \end{enumerate}
 
-If we want to abstract this composition as a higher order function in
-C++, we have to use a template parameterized by three types
-corresponding to three objects in our category. It should take two
-embellished functions that are composable according to our rules, and
-return a third embellished function:
+이 합성을 C++ 에서 고차 함수로 추상화 한다면 세 종류의 카테고리에 해당하는 세 가지 타입
+매개변수로 이뤄진 템플릿을 사용할 수 있습니다. 앞선 레시피대로 합성 가능한 두 함수를 받아
+새로운 함수를 반환해야 합니다:
 
 \begin{snip}{cpp}
 template<class A, class B, class C>
@@ -212,18 +203,17 @@ function<Writer<C>(A)> compose(function<Writer<B>(A)> m1,
     };
 }
 \end{snip}
-Now we can go back to our earlier example and implement the composition
-of \code{toUpper} and \code{toWords} using this new template:
+이제 이전 예제로 돌아가서 방금 만든 새 템플릿을 사용하면 \code{toUpper}와
+\code{toWords}도 합성할 수 있습니다:
 
 \begin{snip}{cpp}
 Writer<vector<string>> process(string s) { 
     return compose<string, string, vector<string>>(toUpper, toWords)(s);
 }
 \end{snip}
-There is still a lot of noise with the passing of types to the
-\code{compose} template. This can be avoided as long as you have a
-C++14-compliant compiler that supports generalized lambda functions with
-return type deduction (credit for this code goes to Eric Niebler):
+이 \code{compose} 템플릿을 사용할 때 타입과 관련한 여러 걱정들이 예상됩니다. 만약 람다
+함수를 지원하는 C++14 호환 컴파일러를 사용한면 걱정들을 상당히 줄일 수 있습니다.
+(이제 이 코드의 신뢰는 Eric Niebler 가 책임지기로 하죠):
 
 \begin{snip}{cpp}
 auto const compose = [](auto m1, auto m2) { 
