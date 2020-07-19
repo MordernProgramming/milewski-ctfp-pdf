@@ -212,7 +212,7 @@ Writer<vector<string>> process(string s) {
 }
 \end{snip}
 이 \code{compose} 템플릿을 사용할 때 타입과 관련한 여러 걱정들이 예상됩니다. 만약 람다
-함수를 지원하는 C++14 호환 컴파일러를 사용한면 걱정들을 상당히 줄일 수 있습니다.
+함수를 지원하는 C++14 호환 컴파일러를 사용한다면 걱정들을 상당히 줄일 수 있습니다.
 (이제 이 코드의 신뢰는 Eric Niebler 가 책임지기로 하죠):
 
 \begin{snip}{cpp}
@@ -224,131 +224,106 @@ auto const compose = [](auto m1, auto m2) {
     };
 };
 \end{snip}
-In this new definition, the implementation of \code{process}
-simplifies to:
+이렇게 하면 \code{process} 함수의 구현은 더 간단해집니다:
 
 \begin{snip}{cpp}
 Writer<vector<string>> process(string s) {
     return compose(toUpper, toWords)(s);
 }
 \end{snip}
-But we are not finished yet. We have defined composition in our new
-category, but what are the identity morphisms? These are not our regular
-identity functions! They have to be morphisms from type A back to type
-A, which means they are embellished functions of the form:
+그러나 아직 더 생각할 것이 있습니다. 우리는 새로운 카테고리를 써서 합성을 만들었지만
+이 합성에 항등원은 어떻게 될까요? 항등함수라면 A 타입에서 A 타입으로 사상해야 합니다.
+우리가 꾸며온 함수들의 타입은 다음과 같습니다:
 
 \begin{snip}{cpp}
 Writer<A> identity(A);
 \end{snip}
-They have to behave like units with respect to composition. If you look
-at our definition of composition, you'll see that an identity morphism
-should pass its argument without change, and only contribute an empty
-string to the log:
+이 합성을 만족시키는 항등 사상은 전달된 인수는 변경하지 않고 다시 결과에 전달하며 로그는
+영향이 없는 빈 문자열만 연산하는 두 행동을 함께 만족해야 합니다:
 
 \begin{snip}{cpp}
 template<class A> Writer<A> identity(A x) {
     return make_pair(x, "");
 }
 \end{snip}
-You can easily convince yourself that the category we have just defined
-is indeed a legitimate category. In particular, our composition is
-trivially associative. If you follow what's happening with the first
-component of each pair, it's just a regular function composition, which
-is associative. The second components are being concatenated, and
-concatenation is also associative.
+이렇게 만든 카테고리가 카테고리로 정의하기에 필요한 조건들을 충분히 만족한다는 것을 쉽게
+증명할 수 있습니다. 먼저, 이 합성이 띄는 결합성을 쉽게 확인할 수 있습니다. 각 결과 쌍의
+첫 번째 요소들만 주목해서 따라가보면 일반적인 함수의 합성일 뿐이며 결합성을 보입니다.
+두 번째 요소들도 계속 쌓여가고 이 동작도 결합성을 보입니다.
 
-An astute reader may notice that it would be easy to generalize this
-construction to any monoid, not just the string monoid. We would use
-\code{mappend} inside \code{compose} and \code{mempty} inside
-\code{identity} (in place of \code{+} and \code{""}). There really
-is no reason to limit ourselves to logging just strings. A good library
-writer should be able to identify the bare minimum of constraints that
-make the library work --- here the logging library's only requirement is
-that the log have monoidal properties.
+눈치빠른 독자라면 이 문자열 모노이드 구조가 모든 모노이드로 일반화하기 쉽다는 것을
+눈치 챘을지도 모릅니다. \code{compose} 역할로 \code{mappend}를 사용하고
+\code{identity}는 \code{mempty}로 표현할 수 있습니다(\code{+} 및 \code{""}).
+이 기능이 문자열을 로깅하는 것으로만 제한할 이유가 없습니다. 우수한 라이브러리 작성자라면
+라이브러리가 작동할 수 있는 최소한의 제약 조건을 식별 할 수 있어야합니다. 여기서 로깅
+라이브러리의 유일한 조건은 로그가 모노이드 성격을 띄는 것입니다.
 
 \section{Writer in Haskell}
 
-The same thing in Haskell is a little more terse, and we also get a lot
-more help from the compiler. Let's start by defining the \code{Writer}
-type:
+동일한 내용dmf Haskell은 컴파일러의 도움을 받아 좀 더 간결하게 표현할 수 있습니다.
+\code{Writer} 유형을 정의하는 것으로 시작합니다.
 
 \src{snippet01}
-Here I'm just defining a type alias, an equivalent of a \code{typedef}
-(or \code{using}) in C++. The type \code{Writer} is parameterized by
-a type variable \code{a} and is equivalent to a pair of \code{a} and
-\code{String}. The syntax for pairs is minimal: just two items in
-parentheses, separated by a comma.
+C++ 의 \code{typedef} (또는 \code{using})와 비슷하게 타입의 alias 를
+정의하고 있습니다. 파라미터로 타입 변수 \code{a}를 받은 \code{Writer} 타입은
+\code{a}와 \code{String} 쌍과 동등합니다. 괄호 안에 두 항목을 쉼표로 구분해서 쓰는
+쌍에 대한 표현은 정말 간단합니다.
 
-Our morphisms are functions from an arbitrary type to some
-\code{Writer} type:
+아래 사상은 임의의 타입을 \code{Writer} 타입에 대응하는 함수입니다:
 
 \src{snippet02}
-We'll declare the composition as a funny infix operator, sometimes
-called the ``fish'':
+이런 합성을 나타내는 이른바 ``물고기''라고 불리는 재미있는 연산자가 있습니다:
 
 \src{snippet03}
-It's a function of two arguments, each being a function on its own, and
-returning a function. The first argument is of the type
-\code{(a -> Writer b)}, the second is
-\code{(b -> Writer c)}, and the result is
-\code{(a -> Writer c)}.
+위 함수는 두 개의 함수를 인자로 받아 역시 함수를 반환합니다. 첫번째 인자는
+\code{(a -> Writer b)} 타입이고, 두번째 인자는 \code{(b -> Writer c)} 타입이며,
+그 결과는 \code{(a -> Writer c)} 타입입니다.
 
-Here's the definition of this infix operator --- the two arguments
-\code{m1} and \code{m2} appearing on either side of the fishy
-symbol:
+이 연산자의 정의는 다음과 같습니다. --- 물고기 기호의 양쪽에 나타나는 두 개의 인수
+\code{m1}와 \code{m2}:
 
 \src{snippet04}
-The result is a lambda function of one argument \code{x}. The lambda
-is written as a backslash --- think of it as the Greek letter λ with an
-amputated leg.
+결과는 하나의 인수 \code{x}를 받는 람다 함수입니다. 람다는 백슬래시로 표현합니다. ---
+다리가 하나가 잘린 그리스 문자 λ를 떠올려보세요.
 
-The \code{let} expression lets you declare auxiliary variables. Here
-the result of the call to \code{m1} is pattern matched to a pair of
-variables \code{(y, s1)}; and the result of the call to \code{m2},
-with the argument \code{y} from the first pattern, is matched to
-\code{(z, s2)}.
+\code{let} 표현식을 사용하면 보조 변수를 선언 할 수 있습니다. 여기서 \code{m1}
+호출의 결과는 \code{(y, s1)} 쌍과 일치하는 패턴입니다. 첫 번째 패턴에서 인수
+\code{y}를 받는 \code{m2}에 대한 호출 결과는 \code{(z, s2)} 쌍과 일치합니다.
 
-It is common in Haskell to pattern match pairs, rather than use
-accessors, as we did in C++. Other than that there is a pretty
-straightforward correspondence between the two implementations.
+C++ 에서 접근자를 사용하는 대신 Haskell 에서는 쌍의 패턴 매치를 사용하는 방식이
+일반적입니다. 이렇게 구현해본 본 두 결과는 매우 흡사합니다.
 
-The overall value of the \code{let} expression is specified in its
-\code{in} clause: here it's a pair whose first component is \code{z}
-and the second component is the concatenation of two strings,
-\code{s1++s2}.
+\code{let} 표현식의 주요한 내용은 \code{in} 절에 적습니다.
+결과 쌍의 첫 번째 요소는 \code{z}이고 두 번째 요소는 두 개의 문자열을
+\code{s1 ++ s2} 로 연결한 것입니다.
 
-I will also define the identity morphism for our category, but for
-reasons that will become clear much later, I will call it
-\code{return}.
+또한 다음처럼 카테고리에 대한 항등 사상을 정의하고, 나중에 좀 더 알아볼테지만 일단은
+\code{return}이라고 부르겠습니다.
 
 \src{snippet05}
-For completeness, let's have the Haskell versions of the embellished
-functions \code{upCase} and \code{toWords}:
+완성도를 높이기 위해 Haskell 버전으로 작성된 함수 \code{upCase} 및
+\code{toWords}도 작성해 보겠습니다:
 
 \src{snippet06}
-The function \code{map} corresponds to the C++ \code{transform}. It
-applies the character function \code{toUpper} to the string
-\code{s}. The auxiliary function \code{words} is defined in the
-standard Prelude library.
+\code{map} 함수는 C++ 의 \code{transform}에 해당합니다. \code{toUpper}
+함수를 문자열 \code{s}에 적용합니다. \code{words} 함수는 표준 Prelude 라이브러리에
+있습니다.
 
-Finally, the composition of the two functions is accomplished with the
-help of the fish operator:
+마지막으로, 두 함수의 합성은 물고기 연산자의 도움을 받아 완성합니다:
 
 \src{snippet07}
 
 \section{Kleisli Categories}
 
-You might have guessed that I haven't invented this category on the
-spot. It's an example of the so called Kleisli category --- a category
-based on a monad. We are not ready to discuss monads yet, but I wanted
-to give you a taste of what they can do. For our limited purposes, a
-Kleisli category has, as objects, the types of the underlying
-programming language. Morphisms from type $A$ to type $B$ are functions that
-go from $A$ to a type derived from $B$ using the particular embellishment.
-Each Kleisli category defines its own way of composing such morphisms,
-as well as the identity morphisms with respect to that composition.
-(Later we'll see that the imprecise term ``embellishment'' corresponds
-to the notion of an endofunctor in a category.)
+제가 이 카테고리를 즉흥적으로 생각해 낸 것으로 보이지는 않겠죠. 이 예시는 모나드를
+기반으로 한 Kleisli 카테고리 입니다. 우리는 아직 모나드에 대해 논의 할 준비가 되지
+않았지만, 모나드로 할 수 있는 것을 살짝 보여주고 싶었습니다. 여기서는 제한적으로
+사용하였지만 Kleisli 카테고리는 프로그래밍 언어의 기반을 이루는 객체나 그 타입을 나타낼
+수 있습니다. 타입 $A$에서 타입 $B$ 로의 사상은 $A$ 로 시작하여 $B$ 에서 파생하는
+타입으로 이동하는 과정을 장식하는 함수들 입니다.
+
+각 Kleisli 카테고리는 항등 사상을 포함한 이러한 사상들의 합성하는 방법을 정의합니다.
+(``장식''이라는 부정확한 용어는 카테고리 이론에서 endofunctor의 개념에 해당합니다.)
 
 The particular monad that I used as the basis of the category in this
 post is called the \newterm{writer monad} and it's used for logging or
